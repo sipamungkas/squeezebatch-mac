@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct ImageManagerApp: App {
+struct SqueezeBatchApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()

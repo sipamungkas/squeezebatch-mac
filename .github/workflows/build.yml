@@ -29,13 +29,13 @@ jobs:
       - name: Resolve SwiftPM dependencies
         run: >
           xcodebuild -resolvePackageDependencies
-          -project ImageManager.xcodeproj
-          -scheme ImageManager
+          -project SqueezeBatch.xcodeproj
+          -scheme SqueezeBatch
 
       - name: Build (Debug)
         run: >
-          xcodebuild -project ImageManager.xcodeproj
-          -scheme ImageManager
+          xcodebuild -project SqueezeBatch.xcodeproj
+          -scheme SqueezeBatch
           -configuration Debug
           -destination 'platform=macOS'
           CODE_SIGNING_ALLOWED=NO
@@ -43,8 +43,8 @@ jobs:
 
       - name: Build (Release)
         run: >
-          xcodebuild -project ImageManager.xcodeproj
-          -scheme ImageManager
+          xcodebuild -project SqueezeBatch.xcodeproj
+          -scheme SqueezeBatch
           -configuration Release
           -destination 'platform=macOS'
           CODE_SIGNING_ALLOWED=NO

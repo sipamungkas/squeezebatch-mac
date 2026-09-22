@@ -1,14 +1,15 @@
-# ImageManager
+# SqueezeBatch
 
 <!-- TODO: replace YOUR_GITHUB_USERNAME with your GitHub username/org once pushed,
      then the badge below will track the build workflow in .github/workflows/build.yml -->
-![Build](https://github.com/YOUR_GITHUB_USERNAME/image-manager/actions/workflows/build.yml/badge.svg)
+![Build](https://github.com/YOUR_GITHUB_USERNAME/squeezebatch-mac/actions/workflows/build.yml/badge.svg)
 ![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)
 ![Platform: macOS 14+](https://img.shields.io/badge/platform-macOS_14%2B-lightgrey.svg)
 
-A native macOS app for bulk image conversion and compression. Drag & drop
-images (or whole folders) to convert between PNG, JPEG, WebP, HEIC, TIFF
-and BMP — with lossless or lossy compression, resizing, and live savings stats.
+**Drop folders. Get smaller images.** A native macOS app for bulk
+image conversion and compression. Drag & drop images (or whole folders)
+to convert between PNG, JPEG, WebP, HEIC, TIFF and BMP — with lossless
+or lossy compression, resizing, and live savings stats.
 
 ## Features
 
@@ -38,11 +39,11 @@ and BMP — with lossless or lossy compression, resizing, and live savings stats
 ## Quick start
 
 ```bash
-git clone https://github.com/YOUR_GITHUB_USERNAME/image-manager.git
-cd image-manager
+git clone https://github.com/YOUR_GITHUB_USERNAME/squeezebatch-mac.git
+cd squeezebatch-mac
 brew install xcodegen
 xcodegen generate
-open ImageManager.xcodeproj   # press ⌘R to run
+open SqueezeBatch.xcodeproj   # press ⌘R to run
 ```
 
 ## Build from terminal
@@ -57,34 +58,34 @@ xcodegen generate
 
 # 3. Fetch SwiftPM deps (libwebp for WebP encode)
 xcodebuild -resolvePackageDependencies \
-  -project ImageManager.xcodeproj -scheme ImageManager
+  -project SqueezeBatch.xcodeproj -scheme SqueezeBatch
 
 # 4. Build (Debug)
-xcodebuild -project ImageManager.xcodeproj \
-  -scheme ImageManager -configuration Debug build
+xcodebuild -project SqueezeBatch.xcodeproj \
+  -scheme SqueezeBatch -configuration Debug build
 
 # 5. Run the built app
-open ~/Library/Developer/Xcode/DerivedData/ImageManager-*/Build/Products/Debug/ImageManager.app
+open ~/Library/Developer/Xcode/DerivedData/SqueezeBatch-*/Build/Products/Debug/SqueezeBatch.app
 ```
 
 Release build and archive:
 
 ```bash
-xcodebuild -project ImageManager.xcodeproj \
-  -scheme ImageManager -configuration Release build
+xcodebuild -project SqueezeBatch.xcodeproj \
+  -scheme SqueezeBatch -configuration Release build
 
-xcodebuild -project ImageManager.xcodeproj \
-  -scheme ImageManager -configuration Release archive \
-  -archivePath ./build/ImageManager.xcarchive
+xcodebuild -project SqueezeBatch.xcodeproj \
+  -scheme SqueezeBatch -configuration Release archive \
+  -archivePath ./build/SqueezeBatch.xcarchive
 ```
 
 Clean rebuild:
 
 ```bash
-rm -rf ~/Library/Developer/Xcode/DerivedData/ImageManager-*
+rm -rf ~/Library/Developer/Xcode/DerivedData/SqueezeBatch-*
 xcodegen generate
-xcodebuild -project ImageManager.xcodeproj \
-  -scheme ImageManager -configuration Debug build
+xcodebuild -project SqueezeBatch.xcodeproj \
+  -scheme SqueezeBatch -configuration Debug build
 ```
 
 Every push/PR is also built on GitHub Actions
@@ -101,8 +102,8 @@ Every push/PR is also built on GitHub Actions
 
 ```
 project.yml                  # xcodegen spec — source of truth for the Xcode project
-ImageManager/
-  ImageManagerApp.swift      # App entry point
+SqueezeBatch/
+  SqueezeBatchApp.swift      # App entry point
   Models/
     ConversionSettings.swift # OutputFormat, quality, resize, destination
     ImageItem.swift          # Per-file state (thumbnail, status, sizes)

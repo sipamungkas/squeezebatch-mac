@@ -1,4 +1,4 @@
-# Contributing to ImageManager
+# Contributing to SqueezeBatch
 
 Thanks for wanting to contribute! This guide covers the development setup
 and the ground rules for pull requests.
@@ -19,22 +19,22 @@ and the ground rules for pull requests.
 ## Setup
 
 ```bash
-git clone https://github.com/YOUR_GITHUB_USERNAME/image-manager.git
-cd image-manager
+git clone https://github.com/YOUR_GITHUB_USERNAME/squeezebatch-mac.git
+cd squeezebatch-mac
 xcodegen generate
-open ImageManager.xcodeproj
+open SqueezeBatch.xcodeproj
 ```
 
 Then press **⌘R** in Xcode, or build from the terminal (see README.md).
 
-> **Important:** `ImageManager.xcodeproj` is generated from `project.yml`.
+> **Important:** `SqueezeBatch.xcodeproj` is generated from `project.yml`.
 > Never edit the `.xcodeproj` by hand — change `project.yml` and re-run
 > `xcodegen generate`. The generated project is git-ignored on purpose.
 
 ## Project conventions
 
 - **SwiftUI + AppKit where needed.** Thumbnails and panels live in
-  `ImageManager/Views`, conversion logic in `ImageManager/Services`.
+  `SqueezeBatch/Views`, conversion logic in `SqueezeBatch/Services`.
 - **Keep it native.** Prefer ImageIO / CoreGraphics over new dependencies.
   WebP encoding is the one exception (`libwebp` via SwiftPM) because
   ImageIO can't encode WebP.

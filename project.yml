@@ -1,6 +1,6 @@
-name: ImageManager
+name: SqueezeBatch
 options:
-  bundleIdPrefix: com.local.imagemanager
+  bundleIdPrefix: com.local.squeezebatch
   deploymentTarget:
     macOS: "14.0"
   xcodeVersion: "16.0"
@@ -9,18 +9,18 @@ packages:
     url: https://github.com/SDWebImage/libwebp-Xcode
     from: "1.4.0"
 targets:
-  ImageManager:
+  SqueezeBatch:
     type: application
     platform: macOS
     sources:
-      - path: ImageManager
+      - path: SqueezeBatch
         excludes:
           - "**/*.md"
     info:
-      path: ImageManager/Info.plist
+      path: SqueezeBatch/Info.plist
       properties:
-        CFBundleName: ImageManager
-        CFBundleDisplayName: ImageManager
+        CFBundleName: SqueezeBatch
+        CFBundleDisplayName: SqueezeBatch
         CFBundleShortVersionString: 1.0.0
         CFBundleVersion: "1"
         LSMinimumSystemVersion: "14.0"
@@ -40,18 +40,18 @@ targets:
               - com.compuserve.gif
             LSBondRoleType: Viewer
     entitlements:
-      path: ImageManager/ImageManager.entitlements
+      path: SqueezeBatch/SqueezeBatch.entitlements
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.local.imagemanager.ImageManager
-        PRODUCT_NAME: ImageManager
+        PRODUCT_BUNDLE_IDENTIFIER: com.local.squeezebatch.SqueezeBatch
+        PRODUCT_NAME: SqueezeBatch
         SWIFT_VERSION: "5.9"
         SWIFT_EMIT_LOC_STRINGS: false
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         ENABLE_HARDENED_RUNTIME: true
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: false
-        INFOPLIST_FILE: ImageManager/Info.plist
+        INFOPLIST_FILE: SqueezeBatch/Info.plist
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: ""
         CODE_SIGN_IDENTITY: "-"
@@ -63,10 +63,10 @@ targets:
     dependencies:
       - package: libwebp
 schemes:
-  ImageManager:
+  SqueezeBatch:
     build:
       targets:
-        ImageManager: all
+        SqueezeBatch: all
     run:
       config: Debug
     archive:
