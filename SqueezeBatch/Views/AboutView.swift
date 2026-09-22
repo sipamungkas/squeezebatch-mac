@@ -29,6 +29,8 @@ enum AppInfo {
 }
 
 struct AboutView: View {
+    @EnvironmentObject private var updater: AppUpdater
+
     var body: some View {
         VStack(spacing: 8) {
             if let icon = NSApp.applicationIconImage {
@@ -59,13 +61,84 @@ struct AboutView: View {
                 .font(.caption)
                 .foregroundStyle(.tertiary)
                 .padding(.top, 2)
+
+            Divider()
+                .padding(.vertical, 4)
+
+            updateSection
         }
         .multilineTextAlignment(.center)
         .padding(24)
-        .frame(minWidth: 280)
+        .frame(minWidth: 300)
+    }
+
+    @ViewBuilder
+    private var updateSection: some View {
+        if updater.updateAvailable, let latest = updater.latestVersion {
+            VStack(spacing: 6) {
+                Text("Version \(latest) is available")
+                    .font(.callout.bold())
+                Button("Download v\(latest)") {
+                    updater.openReleasePage()
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                Button("Skip this version", role: .cancel) {
+                    updater.skipVersion()
+                }
+                .buttonStyle(.link)
+                .font(.caption)
+            }
+        } else {
+            VStack(spacing: 6) {
+                Button {
+                    Task { await updater.check() }
+                } label: {
+                    if updater.isChecking {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                            .frame(width: 16, height: 16)
+                    } else {
+                        Text("Check for Updates…")
+                    }
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(updater.isChecking)
+
+                if updater.lastCheckFailed {
+                    Text("Couldn’t reach GitHub — check your connection and try again.")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                } else if let last = updater.lastChecked {
+                    Text("Last checked \(last, style: .relative) ago")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+
+                Toggle("Check automatically", isOn: $updater.autoCheckEnabled)
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+                    .labelsHidden()
+                    .labeled("Check automatically")
+            }
+        }
+    }
+}
+
+private extension View {
+    /// Labeled toggle without the default full-width label layout.
+    func labeled(_ text: String) -> some View {
+        HStack(spacing: 6) {
+            Text(text)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            self
+        }
     }
 }
 
 #Preview {
     AboutView()
+        .environmentObject(AppUpdater.shared)
 }
