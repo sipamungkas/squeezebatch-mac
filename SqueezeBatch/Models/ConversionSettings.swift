@@ -84,6 +84,7 @@ enum ResizeMode: String, CaseIterable, Identifiable, Codable {
     case none
     case maxDimension
     case percentage
+    case exactDimensions
 
     var id: String { rawValue }
     var displayName: String {
@@ -91,6 +92,7 @@ enum ResizeMode: String, CaseIterable, Identifiable, Codable {
         case .none: return "No resize"
         case .maxDimension: return "Max dimension"
         case .percentage: return "Scale %"
+        case .exactDimensions: return "Exact size"
         }
     }
 }
@@ -102,6 +104,10 @@ struct ConversionSettings: Codable, Equatable {
     var resizeMode: ResizeMode = .none
     var maxDimension: Double = 2048
     var scalePercent: Double = 100
+    var targetWidth: Double = 1920
+    var targetHeight: Double = 1080
+    /// Aspect preset constraining the exact-size fields (and offered in the crop editor).
+    var resizeAspect: AspectRatio = .free
     var destination: OutputDestination = .sameFolder
     var customFolder: URL? = nil
     var overwriteExisting: Bool = false

@@ -4,6 +4,7 @@ struct ImageRowView: View {
     @ObservedObject var item: ImageItem
     var onRemove: () -> Void
     var onReveal: () -> Void
+    var onCrop: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
@@ -29,6 +30,15 @@ struct ImageRowView: View {
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(Color(nsColor: .quaternaryLabelColor).opacity(0.35), in: Capsule())
+                    if item.hasCrop {
+                        Text("CROPPED")
+                            .font(.caption2)
+                            .fontWeight(.semibold)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.accentColor.opacity(0.18), in: Capsule())
+                            .foregroundStyle(Color.accentColor)
+                    }
                     Text(ImageConverter.formatBytes(item.fileSize))
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -55,6 +65,13 @@ struct ImageRowView: View {
             }
             .frame(width: 110, alignment: .trailing)
 
+            Button(action: onCrop) {
+                Image(systemName: "crop")
+                    .foregroundStyle(item.hasCrop ? Color.accentColor : Color.secondary)
+            }
+            .buttonStyle(.plain)
+            .help(item.hasCrop ? "Edit crop" : "Crop…")
+
             Button(action: onRemove) {
                 Image(systemName: "xmark.circle.fill")
                     .foregroundStyle(.secondary)
@@ -64,6 +81,7 @@ struct ImageRowView: View {
         }
         .padding(.vertical, 6)
         .contextMenu {
+            Button("Crop…") { onCrop() }
             if item.status.isDone {
                 Button("Show in Finder") { onReveal() }
             }

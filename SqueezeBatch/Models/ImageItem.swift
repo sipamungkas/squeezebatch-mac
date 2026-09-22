@@ -35,6 +35,9 @@ final class ImageItem: Identifiable, ObservableObject {
     @Published var outputURL: URL?
     @Published var outputSize: Int64?
     @Published var thumbnail: NSImage?
+    /// Normalized crop rect in unit space (origin top-left, 0...1).
+    /// `nil` means no crop — the full image is converted.
+    @Published var cropRectNormalized: CGRect?
 
     let fileName: String
     let fileSize: Int64
@@ -58,6 +61,18 @@ final class ImageItem: Identifiable, ObservableObject {
     var savingsPercent: Double? {
         guard let out = outputSize, fileSize > 0, status.isDone else { return nil }
         return (1.0 - Double(out) / Double(fileSize)) * 100.0
+    }
+
+    var hasCrop: Bool { cropRectNormalized != nil }
+
+    /// Pixel dimensions of the cropped area, if a crop is set.
+    func croppedDimensions() -> CGSize? {
+        guard let crop = cropRectNormalized, let dims = dimensions else { return nil }
+        return CGSize(width: floor(dims.width * crop.width), height: floor(dims.height * crop.height))
+    }
+
+    func clearCrop() {
+        cropRectNormalized = nil
     }
 
     static func readDimensions(of url: URL) -> CGSize? {

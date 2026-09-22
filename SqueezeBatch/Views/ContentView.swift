@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 struct ContentView: View {
     @StateObject private var store = ImageStore()
     @State private var isDropTargeted = false
+    @State private var cropItem: ImageItem?
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
@@ -139,12 +140,20 @@ struct ContentView: View {
                         if let out = item.outputURL {
                             NSWorkspace.shared.activateFileViewerSelecting([out])
                         }
-                    }
+                    },
+                    onCrop: { cropItem = item }
                 )
                 .listRowInsets(EdgeInsets(top: 2, leading: 12, bottom: 2, trailing: 12))
             }
         }
         .listStyle(.inset(alternatesRowBackgrounds: true))
+        .sheet(item: $cropItem) { item in
+            CropEditorView(
+                item: item,
+                suggestedAspect: store.settings.resizeAspect,
+                onClose: { cropItem = nil }
+            )
+        }
     }
 
     // MARK: - Footer

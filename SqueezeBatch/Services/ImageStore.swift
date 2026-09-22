@@ -140,8 +140,9 @@ final class ImageStore: ObservableObject {
     private func convertOne(_ item: ImageItem, settings: ConversionSettings) async {
         item.status = .converting(progress: 0.2)
         do {
+            let crop = item.cropRectNormalized
             let result = try await Task.detached(priority: .userInitiated) {
-                try ImageConverter.convert(sourceURL: item.sourceURL, settings: settings)
+                try ImageConverter.convert(sourceURL: item.sourceURL, settings: settings, cropNormalized: crop)
             }.value
             item.outputURL = result.0
             item.outputSize = result.1

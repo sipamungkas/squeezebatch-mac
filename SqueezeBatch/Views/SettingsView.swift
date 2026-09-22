@@ -110,7 +110,74 @@ struct SettingsView: View {
                         .frame(width: 40, alignment: .trailing)
                 }
             }
+            if settings.resizeMode == .exactDimensions {
+                HStack(spacing: 8) {
+                    Text("Size")
+                        .frame(width: 52, alignment: .leading)
+                    TextField("", value: $settings.targetWidth, formatter: Self.intFormatter)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 64)
+                        .multilineTextAlignment(.trailing)
+                        .disabled(isConverting)
+                        .onChange(of: settings.targetWidth) { _, newWidth in
+                            matchAspect(changed: .width, value: newWidth)
+                        }
+                    Text("×")
+                        .foregroundStyle(.secondary)
+                    TextField("", value: $settings.targetHeight, formatter: Self.intFormatter)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 64)
+                        .multilineTextAlignment(.trailing)
+                        .disabled(isConverting)
+                        .onChange(of: settings.targetHeight) { _, newHeight in
+                            matchAspect(changed: .height, value: newHeight)
+                        }
+                    Text("px")
+                        .foregroundStyle(.secondary)
+                }
+                Picker("Aspect", selection: $settings.resizeAspect) {
+                    ForEach(AspectRatio.allCases) { a in
+                        Text(a.displayName).tag(a)
+                    }
+                }
+                .pickerStyle(.menu)
+                .disabled(isConverting)
+                .onChange(of: settings.resizeAspect) { _, newAspect in
+                    applyAspect(newAspect)
+                }
+                Text("Aspect also seeds the per-image crop editor.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
+    }
+
+    private enum ChangedField { case width, height }
+
+    private static let intFormatter: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.maximumFractionDigits = 0
+        f.minimum = 16
+        f.maximum = 16384
+        return f
+    }()
+
+    /// When an aspect preset is locked, keep W×H on-ratio as fields change.
+    private func matchAspect(changed: ChangedField, value: Double) {
+        guard let ratio = settings.resizeAspect.ratio, value > 0 else { return }
+        switch changed {
+        case .width:
+            settings.targetHeight = (value / ratio).rounded()
+        case .height:
+            settings.targetWidth = (value * ratio).rounded()
+        }
+    }
+
+    private func applyAspect(_ aspect: AspectRatio) {
+        guard let ratio = aspect.ratio, settings.targetWidth > 0 else { return }
+        settings.targetHeight = (settings.targetWidth / ratio).rounded()
     }
 
     // MARK: - Destination

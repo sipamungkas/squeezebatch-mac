@@ -31,10 +31,13 @@ enum ImageConverter {
     // MARK: - Public API
 
     /// Convert a single image file. Returns output file URL + byte count.
+    /// - Parameter cropNormalized: optional per-image crop in unit space
+    ///   (origin top-left, 0...1). Applied before resizing.
     static func convert(
         sourceURL: URL,
         settings: ConversionSettings,
-        outputURL: URL? = nil
+        outputURL: URL? = nil,
+        cropNormalized: CGRect? = nil
     ) throws -> (URL, Int64) {
         guard let src = CGImageSourceCreateWithURL(sourceURL as CFURL, nil),
               let cgImage = CGImageSourceCreateImageAtIndex(src, 0, nil)
@@ -42,7 +45,8 @@ enum ImageConverter {
             throw ConverterError.cannotDecode(sourceURL)
         }
 
-        let resized = resizedImage(cgImage, settings: settings)
+        let cropped = cropNormalized.map { croppedImage(cgImage, to: $0) } ?? cgImage
+        let resized = resizedImage(cropped, settings: settings)
         let destURL = outputURL ?? makeOutputURL(for: sourceURL, settings: settings)
         try ensureParentExists(for: destURL)
 
@@ -114,6 +118,111 @@ enum ImageConverter {
         }
     }
 
+    // MARK: - Crop
+
+    /// Crop a CGImage to a normalized rect (origin top-left, 0...1, clamped).
+    /// Returns the original image when the rect covers (nearly) everything.
+    static func croppedImage(_ image: CGImage, to normalized: CGRect) -> CGImage {
+        let unit = CGRect(x: 0, y: 0, width: 1, height: 1)
+        let clamped = normalized.intersection(unit)
+        guard clamped.width >= 0.001, clamped.height >= 0.001,
+              clamped.width < 0.9999 || clamped.height < 0.9999
+        else { return image }
+
+        let w = CGFloat(image.width), h = CGFloat(image.height)
+        // CGImage pixel space has its origin at the top-left for cropping(to:).
+        let pixelRect = CGRect(
+            x: floor(clamped.minX * w),
+            y: floor(clamped.minY * h),
+            width: floor(clamped.width * w),
+            height: floor(clamped.height * h)
+        ).intersection(CGRect(x: 0, y: 0, width: w, height: h))
+        guard pixelRect.width >= 1, pixelRect.height >= 1,
+              let cut = image.cropping(to: pixelRect)
+        else { return image }
+        return cut
+    }
+
+    /// Save a cropped copy of a single image in its *source* format —
+    /// the "just crop this one photo" path that skips the batch pipeline.
+    /// Returns output file URL + byte count.
+    static func saveCroppedCopy(
+        sourceURL: URL,
+        normalized: CGRect,
+        outputURL: URL? = nil
+    ) throws -> (URL, Int64) {
+        guard let src = CGImageSourceCreateWithURL(sourceURL as CFURL, nil),
+              let cgImage = CGImageSourceCreateImageAtIndex(src, 0, nil)
+        else {
+            throw ConverterError.cannotDecode(sourceURL)
+        }
+
+        let cropped = croppedImage(cgImage, to: normalized)
+        var destURL = outputURL ?? croppedCopyURL(for: sourceURL)
+        try ensureParentExists(for: destURL)
+        let metadata = copyMetadata(from: src)
+
+        let ext = sourceURL.pathExtension.lowercased()
+        // GIF and JPEG-2000 have no ImageIO encode path here — fall back to PNG content.
+        if ["gif", "jp2", "jpx"].contains(ext), outputURL == nil {
+            let folder = sourceURL.deletingLastPathComponent()
+            let stem = sourceURL.deletingPathExtension().lastPathComponent
+            destURL = folder.appendingPathComponent("\(stem)-cropped.png")
+            var i = 1
+            while FileManager.default.fileExists(atPath: destURL.path) {
+                i += 1
+                destURL = folder.appendingPathComponent("\(stem)-cropped-\(i).png")
+                if i > 999 { break }
+            }
+        }
+        if ext == "webp" {
+            let data = try WebPCodec.encode(cropped, quality: 100, lossless: true)
+            do {
+                try data.write(to: destURL, options: .atomic)
+            } catch {
+                throw ConverterError.cannotWrite(destURL, error.localizedDescription)
+            }
+        } else {
+            let format: OutputFormat = {
+                switch ext {
+                case "jpg", "jpeg": return .jpeg
+                case "tif", "tiff": return .tiff
+                case "heif", "heic": return .heic
+                case "png": return .png
+                case "bmp": return .bmp
+                default: return .png
+                }
+            }()
+            // Crop-only: keep quality at max so the operation is (near-)lossless.
+            let singleSettings = ConversionSettings(format: format, quality: 100)
+            try writeViaImageIO(
+                image: cropped,
+                format: format,
+                settings: singleSettings,
+                metadata: metadata,
+                to: destURL
+            )
+        }
+
+        let size = (try? FileManager.default.attributesOfItem(atPath: destURL.path)[.size] as? NSNumber)?.int64Value ?? 0
+        return (destURL, size)
+    }
+
+    /// "<stem>-cropped.<ext>" next to the source, auto-numbered on collision.
+    static func croppedCopyURL(for source: URL) -> URL {
+        let folder = source.deletingLastPathComponent()
+        let stem = source.deletingPathExtension().lastPathComponent
+        let ext = source.pathExtension.isEmpty ? "png" : source.pathExtension
+        var candidate = folder.appendingPathComponent("\(stem)-cropped.\(ext)")
+        var i = 1
+        while FileManager.default.fileExists(atPath: candidate.path) {
+            i += 1
+            candidate = folder.appendingPathComponent("\(stem)-cropped-\(i).\(ext)")
+            if i > 999 { break }
+        }
+        return candidate
+    }
+
     // MARK: - Helpers
 
     private static func copyMetadata(from src: CGImageSource) -> CFDictionary? {
@@ -172,6 +281,11 @@ enum ImageConverter {
                 let pct = min(max(settings.scalePercent, 1), 1000) / 100.0
                 guard pct != 1.0 else { return nil }
                 return CGSize(width: floor(CGFloat(image.width) * pct), height: floor(CGFloat(image.height) * pct))
+            case .exactDimensions:
+                let w = floor(CGFloat(max(settings.targetWidth, 16)))
+                let h = floor(CGFloat(max(settings.targetHeight, 16)))
+                guard Int(w) != image.width || Int(h) != image.height else { return nil }
+                return CGSize(width: w, height: h)
             }
         }()
 
