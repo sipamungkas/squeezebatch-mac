@@ -93,12 +93,17 @@ jobs:
             exit 1
           fi
 
+          rm -rf staging/dmg
           mkdir -p dist staging/dmg
           cp -R "$APP_PATH" "staging/dmg/SqueezeBatch.app"
 
           # Ad-hoc sign so the app launches via right-click > Open on test machines
           # (unsigned builds are blocked harder by Gatekeeper).
           codesign --force --deep --sign - "staging/dmg/SqueezeBatch.app" || true
+
+          # Drag-and-drop install: Applications symlink so the DMG shows
+          # SqueezeBatch.app next to Applications.
+          ln -s /Applications "staging/dmg/Applications"
 
           # ZIP: ditto preserves symlinks/resource forks (same reason TablePro uses ditto).
           ditto -c -k --sequesterRsrc --keepParent \
