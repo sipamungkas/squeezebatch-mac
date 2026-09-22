@@ -1,0 +1,73 @@
+name: ImageManager
+options:
+  bundleIdPrefix: com.local.imagemanager
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "16.0"
+packages:
+  libwebp:
+    url: https://github.com/SDWebImage/libwebp-Xcode
+    from: "1.4.0"
+targets:
+  ImageManager:
+    type: application
+    platform: macOS
+    sources:
+      - path: ImageManager
+        excludes:
+          - "**/*.md"
+    info:
+      path: ImageManager/Info.plist
+      properties:
+        CFBundleName: ImageManager
+        CFBundleDisplayName: ImageManager
+        CFBundleShortVersionString: 1.0.0
+        CFBundleVersion: "1"
+        LSMinimumSystemVersion: "14.0"
+        NSMainStoryboardFile: ""
+        NSPrincipalClass: NSApplication
+        NSSupportsAutomaticGraphicsSwitching: true
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Images
+            CFBundleTypeRole: Viewer
+            LSItemContentTypes:
+              - public.png
+              - public.jpeg
+              - org.webmproject.webp
+              - public.heic
+              - public.tiff
+              - com.microsoft.bmp
+              - com.compuserve.gif
+            LSBondRoleType: Viewer
+    entitlements:
+      path: ImageManager/ImageManager.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.local.imagemanager.ImageManager
+        PRODUCT_NAME: ImageManager
+        SWIFT_VERSION: "5.9"
+        SWIFT_EMIT_LOC_STRINGS: false
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        ENABLE_HARDENED_RUNTIME: true
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        GENERATE_INFOPLIST_FILE: false
+        INFOPLIST_FILE: ImageManager/Info.plist
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""
+        CODE_SIGN_IDENTITY: "-"
+      configs:
+        Debug:
+          SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+        Release:
+          SWIFT_OPTIMIZATION_LEVEL: "-O"
+    dependencies:
+      - package: libwebp
+schemes:
+  ImageManager:
+    build:
+      targets:
+        ImageManager: all
+    run:
+      config: Debug
+    archive:
+      config: Release

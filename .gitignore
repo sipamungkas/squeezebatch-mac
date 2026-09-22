@@ -1,0 +1,22 @@
+# XcodeGen-generated project (regenerate with `xcodegen generate`)
+*.xcodeproj/
+
+# Build outputs
+build/
+*.xcarchive/
+*.dSYM.zip
+DerivedData/
+
+# Xcode user-specific state
+xcuserdata/
+*.xcuserstate
+*.xccheckout
+
+# SwiftPM
+.swiftpm/
+Packages/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride

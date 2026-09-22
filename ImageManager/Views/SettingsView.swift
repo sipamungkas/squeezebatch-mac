@@ -1,0 +1,191 @@
+import SwiftUI
+
+struct SettingsView: View {
+    @Binding var settings: ConversionSettings
+    var isConverting: Bool
+
+    var body: some View {
+        VStack(spacing: 14) {
+            formatSection
+            compressionSection
+            resizeSection
+            destinationSection
+        }
+        .padding(12)
+    }
+
+    // MARK: - Format
+
+    private var formatSection: some View {
+        SettingsSection(title: "Output format") {
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 6) {
+                ForEach(OutputFormat.allCases) { format in
+                    Button {
+                        settings.format = format
+                        // JPEG/HEIC have no lossless mode — reset stale state.
+                        if !format.supportsLossless { settings.lossless = false }
+                    } label: {
+                        Text(format.displayName)
+                            .font(.system(size: 12, weight: settings.format == format ? .semibold : .regular))
+                            .frame(maxWidth: .infinity, minHeight: 26)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(settings.format == format ? .accentColor : nil)
+                    .disabled(isConverting)
+                }
+            }
+            Text(settings.format.description)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    // MARK: - Compression
+
+    private var compressionSection: some View {
+        SettingsSection(title: "Compression") {
+            if settings.format.supportsLossless {
+                Toggle("Lossless", isOn: $settings.lossless)
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+                    .disabled(isConverting)
+            }
+            if settings.format.usesQuality && !settings.lossless {
+                HStack(spacing: 8) {
+                    Text("Quality")
+                        .frame(width: 52, alignment: .leading)
+                    Slider(value: $settings.quality, in: 1...100, step: 1)
+                        .disabled(isConverting)
+                    Text("\(Int(settings.quality))")
+                        .monospacedDigit()
+                        .frame(width: 28, alignment: .trailing)
+                }
+                Text(qualityHint)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                Text("Lossless — maximum quality, larger file.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    // MARK: - Resize
+
+    private var resizeSection: some View {
+        SettingsSection(title: "Resize") {
+            Picker("", selection: $settings.resizeMode) {
+                ForEach(ResizeMode.allCases) { m in
+                    Text(m.displayName).tag(m)
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .disabled(isConverting)
+
+            if settings.resizeMode == .maxDimension {
+                HStack(spacing: 8) {
+                    Text("Max")
+                        .frame(width: 52, alignment: .leading)
+                    Slider(value: $settings.maxDimension, in: 256...8192, step: 64)
+                        .disabled(isConverting)
+                    Text("\(Int(settings.maxDimension))px")
+                        .monospacedDigit()
+                        .frame(width: 56, alignment: .trailing)
+                }
+            }
+            if settings.resizeMode == .percentage {
+                HStack(spacing: 8) {
+                    Text("Scale")
+                        .frame(width: 52, alignment: .leading)
+                    Slider(value: $settings.scalePercent, in: 1...100, step: 1)
+                        .disabled(isConverting)
+                    Text("\(Int(settings.scalePercent))%")
+                        .monospacedDigit()
+                        .frame(width: 40, alignment: .trailing)
+                }
+            }
+        }
+    }
+
+    // MARK: - Destination
+
+    private var destinationSection: some View {
+        SettingsSection(title: "Destination") {
+            Picker("", selection: $settings.destination) {
+                ForEach(OutputDestination.allCases) { d in
+                    Text(d.displayName).tag(d)
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .disabled(isConverting)
+
+            if settings.destination == .custom {
+                HStack(spacing: 8) {
+                    Text(settings.customFolder?.path ?? "No folder chosen")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Button("Choose…") { chooseFolder() }
+                        .controlSize(.small)
+                        .disabled(isConverting)
+                }
+            }
+
+            Toggle("Overwrite existing files", isOn: $settings.overwriteExisting)
+                .toggleStyle(.switch)
+                .controlSize(.small)
+                .disabled(isConverting)
+        }
+    }
+
+    private var qualityHint: String {
+        switch settings.quality {
+        case ..<40: return "Low — smallest file, visible artifacts."
+        case ..<75: return "Balanced — good for web."
+        case ..<95: return "High — recommended."
+        default: return "Near-lossless — large file."
+        }
+    }
+
+    private func chooseFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        if panel.runModal() == .OK, let url = panel.url {
+            settings.customFolder = url
+        }
+    }
+}
+
+/// Native-looking grouped section with a consistent header + hairline.
+struct SettingsSection<Content: View>: View {
+    var title: String
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title.uppercased())
+                .font(.caption2)
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 8) {
+                content
+            }
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(nsColor: .controlBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+    }
+}
