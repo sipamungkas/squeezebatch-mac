@@ -90,6 +90,16 @@ xcodebuild -project SqueezeBatch.xcodeproj \
 
 Every push/PR is also built on GitHub Actions
 (see [.github/workflows/build.yml](.github/workflows/build.yml)).
+Each build uploads the `.app` as an artifact; pushing a version tag
+publishes a GitHub Release with `.zip` + `.dmg` (see
+[.github/workflows/release.yml](.github/workflows/release.yml)):
+
+```bash
+# bump CFBundleShortVersionString in project.yml first, then:
+git tag v0.2.0 && git push origin v0.2.0
+```
+
+Full checklist: [RELEASING.md](RELEASING.md).
 
 ## Usage
 
@@ -115,7 +125,8 @@ SqueezeBatch/
     ContentView.swift        # Split view, drop target, list, footer
     SettingsView.swift       # Sidebar controls
     ImageRowView.swift       # File row with status + savings
-.github/workflows/build.yml # CI: xcodegen → resolve → build Debug + Release
+.github/workflows/build.yml # CI: xcodegen → resolve → build Debug + Release, upload .app artifact
+.github/workflows/release.yml # Release: tag v* → build Release → publish .zip + .dmg to GitHub Release
 ```
 
 ## Contributing

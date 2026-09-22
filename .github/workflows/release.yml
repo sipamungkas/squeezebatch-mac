@@ -1,0 +1,136 @@
+name: Release
+
+# Same flow as TableProApp/TablePro (simplified, no signing/notarization):
+# push a version tag -> build Release -> package .zip + .dmg -> publish GitHub Release.
+#   git tag v0.2.0 && git push origin v0.2.0
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Build and publish release
+    runs-on: macos-15
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select latest Xcode
+        run: |
+          XCODE_APP=$(ls -d /Applications/Xcode*.app | sort -V | tail -n1)
+          echo "Using $XCODE_APP"
+          sudo xcode-select -s "$XCODE_APP/Contents/Developer"
+          xcodebuild -version
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Resolve SwiftPM dependencies
+        run: >
+          xcodebuild -resolvePackageDependencies
+          -project SqueezeBatch.xcodeproj
+          -scheme SqueezeBatch
+
+      - name: Resolve version
+        id: version
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            # manual run: use CFBundleShortVersionString from project.yml
+            VERSION=$(grep -E 'CFBundleShortVersionString:' project.yml | head -1 | sed 's/.*: //')
+          fi
+          if [ -z "$VERSION" ]; then
+            echo "::error::could not resolve version"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Version: $VERSION"
+
+      - name: Verify tag matches app version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+          APP_VERSION=$(grep -E 'CFBundleShortVersionString:' project.yml | head -1 | sed 's/.*: //')
+          if [ "$TAG_VERSION" != "$APP_VERSION" ]; then
+            echo "::error::tag v$TAG_VERSION does not match CFBundleShortVersionString $APP_VERSION in project.yml"
+            exit 1
+          fi
+          echo "tag and project.yml agree on $TAG_VERSION"
+
+      - name: Build (Release)
+        run: >
+          xcodebuild -project SqueezeBatch.xcodeproj
+          -scheme SqueezeBatch
+          -configuration Release
+          -destination 'platform=macOS'
+          -derivedDataPath build/DerivedData
+          CODE_SIGNING_ALLOWED=NO
+          build
+
+      - name: Package .zip and .dmg
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.version.outputs.version }}"
+          APP_PATH="build/DerivedData/Build/Products/Release/SqueezeBatch.app"
+          if [ ! -d "$APP_PATH" ]; then
+            echo "::error::built app not found at $APP_PATH"
+            find build/DerivedData -maxdepth 4 -name "*.app" 2>/dev/null || true
+            exit 1
+          fi
+
+          mkdir -p dist staging/dmg
+          cp -R "$APP_PATH" "staging/dmg/SqueezeBatch.app"
+
+          # Ad-hoc sign so the app launches via right-click > Open on test machines
+          # (unsigned builds are blocked harder by Gatekeeper).
+          codesign --force --deep --sign - "staging/dmg/SqueezeBatch.app" || true
+
+          # ZIP: ditto preserves symlinks/resource forks (same reason TablePro uses ditto).
+          ditto -c -k --sequesterRsrc --keepParent \
+            "staging/dmg/SqueezeBatch.app" "dist/SqueezeBatch-${VERSION}-macOS.zip"
+
+          # DMG: built-in hdiutil, no extra dependencies.
+          hdiutil create -volname "SqueezeBatch ${VERSION}" \
+            -srcfolder staging/dmg -ov -format UDZO \
+            "dist/SqueezeBatch-${VERSION}-macOS.dmg"
+
+          echo "Artifacts:"
+          ls -lh dist/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: SqueezeBatch-${{ steps.version.outputs.version }}-macOS
+          path: |
+            dist/*.zip
+            dist/*.dmg
+          retention-days: 90
+
+      - name: Create GitHub Release
+        # Only publish a Release for tag pushes; manual runs just upload artifacts.
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.zip
+            dist/*.dmg
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref, '-beta') || contains(github.ref, '-alpha') || contains(github.ref, '-rc') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

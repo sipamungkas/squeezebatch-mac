@@ -38,6 +38,7 @@ jobs:
           -scheme SqueezeBatch
           -configuration Debug
           -destination 'platform=macOS'
+          -derivedDataPath build/DerivedData
           CODE_SIGNING_ALLOWED=NO
           build
 
@@ -47,5 +48,19 @@ jobs:
           -scheme SqueezeBatch
           -configuration Release
           -destination 'platform=macOS'
+          -derivedDataPath build/DerivedData
           CODE_SIGNING_ALLOWED=NO
           build
+
+      - name: Package unsigned .app for download
+        run: |
+          APP_PATH="build/DerivedData/Build/Products/Release/SqueezeBatch.app"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "build/SqueezeBatch-unsigned-macOS.zip"
+          ls -lh build/*.zip
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SqueezeBatch-unsigned-macOS
+          path: build/SqueezeBatch-unsigned-macOS.zip
+          retention-days: 14

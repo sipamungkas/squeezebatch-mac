@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 struct ContentView: View {
     @StateObject private var store = ImageStore()
     @State private var isDropTargeted = false
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         NavigationSplitView {
@@ -177,6 +178,13 @@ struct ContentView: View {
             Button("Clear all") { store.removeAll() }
                 .buttonStyle(.link)
                 .disabled(store.isConverting || store.items.isEmpty)
+            Button {
+                openWindow(id: "about")
+            } label: {
+                Image(systemName: "info.circle")
+            }
+            .buttonStyle(.link)
+            .help("About SqueezeBatch")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
