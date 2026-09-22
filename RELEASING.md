@@ -13,21 +13,28 @@ This mirrors the TablePro flow, minus paid signing/notarization
 #    project.yml -> info.properties.CFBundleShortVersionString
 #    e.g. 0.1.0 -> 0.2.0
 
-# 2. Commit the bump on main
-git add project.yml
+# 2. Write the release notes: in CHANGELOG.md, rename
+#    ## [Unreleased] to ## [0.2.0] and make sure the bullets
+#    under it describe this release. That section becomes the
+#    release body (GitHub appends its What's Changed list below it).
+#    The workflow fails on purpose if the section is missing.
+
+# 3. Commit the bump + notes on main
+git add project.yml CHANGELOG.md
 git commit -m "Release v0.2.0"
 git push origin main
 
-# 3. Tag and push the tag (this starts the release build)
+# 4. Tag and push the tag (this starts the release build)
 git tag v0.2.0
 git push origin v0.2.0
 
-# 4. Watch it: GitHub repo -> Actions -> "Release"
+# 5. Watch it: GitHub repo -> Actions -> "Release"
 #    Result: GitHub repo -> Releases -> v0.2.0
 #    with SqueezeBatch-0.2.0-macOS.zip + SqueezeBatch-0.2.0-macOS.dmg
+#    and the CHANGELOG.md section as the release notes.
 ```
 
-One-liner for steps 2–3 (after the version bump is committed):
+One-liner for steps 3–4 (after the version bump is committed):
 
 ```bash
 git push origin main && git tag v0.2.0 && git push origin v0.2.0
@@ -75,6 +82,7 @@ Actions → Release → Run workflow. A manual run builds and uploads the
 | Symptom | Cause / fix |
 |---|---|
 | `tag vX does not match CFBundleShortVersionString` | Bump `project.yml` to the tagged version, commit, delete + re-push the tag |
+| `No release notes found for version X in CHANGELOG.md` | Rename `## [Unreleased]` to `## [X]` in `CHANGELOG.md`, commit, delete + re-push the tag |
 | Release has no files | `Package .zip and .dmg` step failed — open that step's log in Actions |
 | Downloaded app won't open | Expected: ad-hoc signed. Right-click → Open → Open (once per machine) |
 | Accidentally pushed tag from a feature branch | Tags build whatever commit they point at — move the tag to `main` (see above) |

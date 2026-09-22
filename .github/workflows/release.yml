@@ -126,6 +126,13 @@ jobs:
             dist/*.dmg
           retention-days: 90
 
+      # Curated notes from CHANGELOG.md become the release body, on top of
+      # GitHub's auto-generated What's Changed (body is pre-pended to it).
+      # Fails here — before publishing — when the version section is missing.
+      - name: Extract release notes
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: python3 scripts/extract-release-notes.py "${{ steps.version.outputs.version }}"
+
       - name: Create GitHub Release
         # Only publish a Release for tag pushes; manual runs just upload artifacts.
         if: startsWith(github.ref, 'refs/tags/v')
@@ -134,6 +141,7 @@ jobs:
           files: |
             dist/*.zip
             dist/*.dmg
+          body_path: release_notes.md
           generate_release_notes: true
           draft: false
           prerelease: ${{ contains(github.ref, '-beta') || contains(github.ref, '-alpha') || contains(github.ref, '-rc') }}
