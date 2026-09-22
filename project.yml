@@ -16,6 +16,7 @@ targets:
       - path: SqueezeBatch
         excludes:
           - "**/*.md"
+          - "Resources/AppIcon-1024.png"
     info:
       path: SqueezeBatch/Info.plist
       properties:
