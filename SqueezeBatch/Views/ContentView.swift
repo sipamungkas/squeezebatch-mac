@@ -10,11 +10,14 @@ struct ContentView: View {
         NavigationSplitView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Convert")
-                        .font(.headline)
-                    Text("to \(store.settings.format.displayName)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Convert")
+                            .font(.headline)
+                        Text("to \(store.settings.format.displayName)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 12)
                     SettingsView(settings: $store.settings, isConverting: store.isConverting)
                 }
                 .padding(.top, 8)
